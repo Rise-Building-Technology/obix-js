@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-obix-js is a JavaScript library for communicating with Tridium Niagara building automation systems via the oBIX (Open Building Information Xchange) protocol. It provides two client classes: `ObixInstance` for oBIX REST operations and `BQLInstance` for Niagara BQL queries.
+`@risebt/obix-js` is a JavaScript library for communicating with Tridium Niagara building automation systems via the oBIX (Open Building Information Xchange) protocol. It provides two client classes: `ObixInstance` for oBIX REST operations and `BQLInstance` for Niagara BQL queries. Requires Node.js >= 20.
 
 ## Commands
 
@@ -13,9 +13,13 @@ obix-js is a JavaScript library for communicating with Tridium Niagara building 
 - `npm run test:coverage` — run tests with coverage
 - `npx jest tests/requests/standard.test.js` — run a single test file
 - `npx jest --testNamePattern="should handle valid boolean"` — run tests matching a pattern
-- `npx eslint src/ index.js` — lint source files
+- `npx eslint .` — lint all files
+- `npx prettier --check .` — check formatting
+- `npx prettier --write .` — fix formatting
 
 No build step — this is a CommonJS Node.js library with `index.js` as the entry point.
+
+CI runs on every push/PR to main (tests on Node 20/22 + lint). Publishing to npm triggers automatically on GitHub release.
 
 ## Architecture
 
@@ -49,3 +53,9 @@ Mirror `src/` structure. Tests mock axios at the instance level (not with module
 - Always use strict equality (`===`/`!==`), never loose equality
 - CommonJS (`require`/`module.exports`), no TypeScript
 - Destructured object params for all public methods: `read({ path })`
+
+## Gotchas
+
+- `value == null` is used intentionally in `batch.js` to catch both `null` and `undefined` — uses `eslint-disable-next-line eqeqeq`. This is the only place loose equality is allowed.
+- History preset matching uses `startsWith` because Niagara returns ref names like `yearToDate (limit=1000)` but users pass just `yearToDate`.
+- `xmlElementForValue` lives in `helpers.js` — shared by `standard.js` and `batch.js`. Maps JS types to oBIX XML elements (`boolean` → `bool`, `number` → `real`, default → `str`).
