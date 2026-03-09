@@ -1,210 +1,177 @@
 # obix-js
 
-Javascript library that contains the core functions for communicating with Tridium Niagara using obix protocol.
+JavaScript library for communicating with Tridium Niagara building automation systems via the oBIX protocol.
+
+## Installation
+
+```sh
+npm install @risebt/obix-js
+```
+
+Requires Node.js 20+.
 
 ## Create Instance
 
-### Obix
+### oBIX
 
-Import and create new `ObixInstance` passing the `protocol`, `host`, `port`, `username`, and `password`.
+```js
+const { ObixInstance } = require('@risebt/obix-js');
 
-```
-const { ObixInstance } = require('obix-js');
 const obix = new ObixInstance({
-  protocol: String ('https' or 'http'),
-  host: String (Niagara IP Address),
-  port: String | Number (Niagara web service port),
-  username: String (Obix username),
-  password: String (Obix password),
-  timeout: Optional Number (ms until request timeout)
-})
+  protocol: 'https', // 'https' or 'http'
+  host: '192.168.1.50', // Niagara IP address
+  port: 443, // Niagara web service port (1–65535)
+  username: 'obix_user', // oBIX username
+  password: 'secret', // oBIX password
+  timeout: 10000, // optional, ms until request timeout (default: 10000)
+  rejectUnauthorized: false, // optional, TLS cert validation (default: false)
+});
 ```
 
 ### BQL
 
-Import and create new `BQLInstance` passing the `protocol`, `host`, `port`, `username`, and `password`.
+```js
+const { BQLInstance } = require('@risebt/obix-js');
 
-```
-const { BQLInstance } = require('obix-js');
 const bql = new BQLInstance({
-  protocol: String ('https' or 'http'),
-  host: String (Niagara IP Address),
-  port: String | Number (Niagara web service port),
-  username: String (HTTPBasic username),
-  password: String (HTTPBasic password),
-  timeout: Optional Number (ms until request timeout)
-})
+  protocol: 'https',
+  host: '192.168.1.50',
+  port: 443,
+  username: 'admin',
+  password: 'secret',
+  timeout: 10000, // optional
+  rejectUnauthorized: false, // optional
+});
 ```
 
-## Obix Methods
+Both constructors validate inputs and throw on invalid host, port, username, or password.
 
-Use newly created `ObixInstance` to call methods.
+You can also pass a custom `httpsAgent` for full control over TLS settings.
 
-### History
-
-```
-const historyResult = await obix.history({
-  path: String,
-  query: String | Object
-})
-```
-
-- `path`: Niagara history path... ex. `histories/TestHistories/History`, only take `"TestHistories/History"` (String)
-- `query`: Time range of history data to retrieve (String | Object)
-
-  - Preset Options (String) :
-    - "yesterday"
-    - "last24Hours"
-    - "weekToDate"
-    - "lastWeek"
-    - "last7Days"
-    - "monthToDate"
-    - "lastMonth"
-    - "yearToDate (limit=1000)"
-    - "lastYear (limit=1000)"
-    - "unboundedQuery"
-  - Custom History (Object) :
-
-    ```
-    {
-      "start": "2020-10-11T12:40:05-04:00",
-      "end": "2020-10-14T12:40:05-04:00" || Date.now(),
-      "limit": "2"
-    }
-    ```
-
-    - **Start and end can be in any JS Date format**
-    - Start and end are the periods of reading data, and the limit is the number of records returned.
-    - If there are more records than the limit allows, then it returns the number of records starting from the start time.
-
-### Batch
-
-```
-const batchResult = await obix.batch({
-  batch: Object | Object[]
-})
-```
-
-- `batch`: Mixture of read/write commands to be executed (String | Object)
-
-  ```
-  [
-    {
-      "path": "Point/Test",
-      "action": "write",
-      "value": "test"
-    },
-    {
-      "path": "Point/Test1",
-      "action": "read"
-    },
-  ]
-  ```
+## oBIX Methods
 
 ### Read
 
+```js
+const result = await obix.read({ path: 'TestFolder/TestPoint' });
+// => { path: 'TestFolder/TestPoint', value: 72.5, action: 'read' }
 ```
-const readResult = await obix.read({
-  path: String
-})
-```
-
-- `path`: Niagara point path... ex. `config/TestFolder/TestPoint`, only take `"TestFolder/TestPoint"` (String)
 
 ### Write
 
-```
-const writeResult = await obix.write({
-  path: String,
-  value: String | Boolean | Number
-})
+```js
+const result = await obix.write({ path: 'TestFolder/TestPoint', value: 68.0 });
+// => { path: 'TestFolder/TestPoint', value: 68.0, action: 'write' }
 ```
 
-- `path`: Niagara point path... ex. `config/TestFolder/TestPoint`, only take `"TestFolder/TestPoint"` (String)
-- `value`: Value that will be written to the point specified in the path (String)
+Values are serialized with type-aware XML elements (`<bool>`, `<real>`, `<str>`) based on the JavaScript type.
 
-### Get
+### Batch
 
-Returns the raw JSON after being converted from the XML response
-
-```
-const getResult = await obix.get({
-  path: String
-})
-```
-
-- `path`: Niagara point path... ex. `config/TestFolder/TestPoint` (String)
-
-### Post
-
-Returns the raw JSON after being converted from the XML response
-
-> The payload must replace any special characters: [Replace Special Characters](https://stackoverflow.com/questions/1091945/what-characters-do-i-need-to-escape-in-xml-documents#:~:text=XML%20escape%20characters,the%20W3C%20Markup%20Validation%20Service)
-
-```
-const postResult = await obix.post({
-  path: String,
-  payload: String
-})
+```js
+const results = await obix.batch({
+  batch: [
+    { path: 'Point/Test', action: 'write', value: 'hello' },
+    { path: 'Point/Test2', action: 'read' },
+  ],
+});
 ```
 
-- `path`: Niagara point path... ex. `config/TestFolder/TestPoint` (String)
-- `payload`: XML string that will be sent as the body of the post request... ex. `<bool val='false'/>` (String)
+Each item needs `path`, `action` (`'read'` or `'write'`), and `value` (for writes).
 
-### Watcher Create
+### History
 
+```js
+const result = await obix.history({ path: 'TestHistories/Ramp', query: 'yesterday' });
 ```
+
+**Preset queries** (string):
+
+- `"yesterday"`, `"last24Hours"`, `"weekToDate"`, `"lastWeek"`, `"last7Days"`
+- `"monthToDate"`, `"lastMonth"`, `"yearToDate"`, `"lastYear"`, `"unboundedQuery"`
+
+**Custom query** (object):
+
+```js
+const result = await obix.history({
+  path: 'TestHistories/Ramp',
+  query: {
+    start: '2024-01-01T00:00:00Z',
+    end: '2024-01-31T23:59:59Z',
+    limit: 100,
+  },
+});
+```
+
+Start and end accept any format supported by `new Date()`.
+
+### Watcher
+
+```js
 const watcher = await obix.watcherCreate();
-const addResult = await watcher.add({ paths: ["Test/Path1", "Test/Path2"] });
-const removeResult = await watcher.remove({ paths: ["Test/Path2"] });
-const pollChangesResult = await watcher.pollChanges();
-const leaseResult = await watcher.lease({ leaseTime: 5000 });
+
+const added = await watcher.add({ paths: ['Test/Path1', 'Test/Path2'] });
+const changes = await watcher.pollChanges();
+const all = await watcher.pollRefresh();
+await watcher.remove({ paths: ['Test/Path2'] });
+await watcher.lease({ leaseTime: 5000 }); // ms
+await watcher.lease({ leaseTime: 'PT4M30S' }); // ISO 8601
+await watcher.delete();
 ```
 
-- Returns watcher object
+The watcher object returned by `watcherCreate()`:
 
-  ```
-  {
-    name: String,
-    add: Function({ paths: String[] }),
-    remove: Function({ paths: String[] }),
-    delete: Function,
-    pollChanges: Function,
-    pollRefresh: Function,
-    lease: Function({ leaseTime: Number<'milliseconds'> | String<'ISO 8601 Format'> })
-  }
-  ```
-
-  - `name`: Watcher name (String)
-  - `add`: Add paths to watcher (Function)
-  - `remove`: Remove paths from watcher (Function)
-  - `delete`: Delete watcher (Function)
-  - `pollChanges`: Poll all watcher's configured paths that have changed since last poll (Function)
-  - `pollRefresh`: Poll all watcher's configured paths (Function)
-  - `lease`: Update watcher's lease time; amount of time until watcher is automatically delete if no polling occurs (Function)
+| Property               | Description                                              |
+| ---------------------- | -------------------------------------------------------- |
+| `name`                 | Watcher name                                             |
+| `add({ paths })`       | Add paths to watch                                       |
+| `remove({ paths })`    | Remove paths from watch                                  |
+| `delete()`             | Delete the watcher                                       |
+| `pollChanges()`        | Poll paths that changed since last poll                  |
+| `pollRefresh()`        | Poll all watched paths                                   |
+| `lease({ leaseTime })` | Update lease time (auto-deletes if no poll within lease) |
 
 ### Watcher Default Lease
 
-```
-const result = await obix.watcherUpdateDefaultLease({ leaseTime: 'PT4M30S' });
+```js
+await obix.watcherUpdateDefaultLease({ leaseTime: 'PT4M30S' });
 ```
 
-- `leaseTime`: Default lease time for all newly created watchers (Number<'milliseconds'> | String<'ISO 8601 Format'>)
+Sets the default lease time for all newly created watchers.
+
+### Raw Get / Post
+
+For direct access to the converted XML-to-JSON response:
+
+```js
+const getResult = await obix.get({ path: 'config/TestFolder/TestPoint' });
+const postResult = await obix.post({ path: 'config/TestFolder/TestPoint', payload: "<bool val='false'/>" });
+```
 
 ## BQL Methods
 
-Use newly created `BQLInstance` to call methods.
-
 ### Query
 
-Returns an array of objects.
-
-> Example queries can be found [here](https://gist.github.com/mrupperman/8a0761bbb416b8ef1ca4f51c228f63bf)
-
-```
-const postResult = await bql.query({
-  query: String
-})
+```js
+const results = await bql.query({ query: 'station:|history:/TestStation|bql:select *' });
+// => [{ column1: 'value1', column2: 'value2' }, ...]
 ```
 
-- `query`: String that will be appended to the bql get request... ex. `station:|history:/TestStation|bql:select *` (String)
+Returns an array of objects parsed from the HTML table response. Example queries can be found [here](https://gist.github.com/mrupperman/8a0761bbb416b8ef1ca4f51c228f63bf).
+
+## Error Handling
+
+All errors expose `friendlyError` and `inDepthError` properties:
+
+```js
+try {
+  await obix.read({ path: 'Invalid/Path' });
+} catch (error) {
+  console.log(error.friendlyError); // user-facing message
+  console.log(error.inDepthError); // detailed diagnostic info
+}
+```
+
+## License
+
+ISC
