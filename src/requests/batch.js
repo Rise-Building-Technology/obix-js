@@ -17,9 +17,10 @@ class BatchRequestInstance {
       obj.path = stripPaths(obj.path)[0];
       if (!isRead) writeActionPaths.push(obj.path);
       const escapedPath = replaceSpecialChars(obj.path);
+      const hasValue = obj.value != null; // eslint-disable-line eqeqeq
       obj.bodyURI = `
       <uri is="obix:${isRead ? 'Read' : 'Invoke'}" val="${baseURL}config/${escapedPath}/${isRead ? 'out' : 'set'}/" >
-        ${obj.value != null ? `<${xmlElementForValue(obj.value)} name="in" val="${replaceSpecialChars(obj.value)}" />` : ''}
+        ${hasValue ? `<${xmlElementForValue(obj.value)} name="in" val="${replaceSpecialChars(obj.value)}" />` : ''}
       </uri>`;
     });
 
@@ -56,7 +57,8 @@ class BatchRequestInstance {
         return errorActions(obj, 'No path provided');
       } else if (action !== 'write' && action !== 'read') {
         return errorActions(obj, 'Action needs to be set to "write" or "read"');
-      } else if (action === 'write' && value == null) { // eslint-disable-line eqeqeq
+        // eslint-disable-next-line eqeqeq
+      } else if (action === 'write' && value == null) {
         return errorActions(obj, 'Action set to "write", but no value given');
       }
       return true;

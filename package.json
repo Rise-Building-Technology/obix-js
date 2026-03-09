@@ -23,7 +23,7 @@
   "author": "Adam Zimmerman",
   "license": "ISC",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "bugs": {
     "url": "https://github.com/Rise-Building-Technology/obix-js/issues"
