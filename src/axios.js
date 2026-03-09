@@ -1,27 +1,30 @@
 const axios = require('axios');
 const https = require('https');
 const convert = require('xml-js');
-const { HTTPError, BQLHTTPError } = require('./errors');
+const { HTTPError, BQLHTTPError, ProtocolError } = require('./errors');
 const { parseError } = require('./parsers/errors');
 
-class ProtocolError extends Error {
-  constructor() {
-    super('Invalid Security Protocol');
-    this.name = 'ProtocolError';
+class XMLParseError extends Error {
+  constructor(rawData) {
+    super('Failed to parse XML response');
+    this.name = 'XMLParseError';
     this.friendlyError = this.message;
-    this.inDepthError = 'Invalid Security Protocol:\nProtocol must be either "https" or "http"';
+    this.inDepthError = 'The server returned a response that could not be parsed as XML';
+    this.rawData = rawData;
   }
 }
 
-const createInstance = ({ protocol, host, port, username, password, isBQL = false, timeout }) => {
-  if (protocol != 'https' && protocol != 'http') throw new ProtocolError();
+const createInstance = ({ protocol, host, port, username, password, isBQL = false, timeout, rejectUnauthorized = true, httpsAgent }) => {
+  if (protocol !== 'https' && protocol !== 'http') throw new ProtocolError();
+
+  const agent = httpsAgent || new https.Agent({ rejectUnauthorized, keepAlive: true });
 
   if (isBQL) {
     const axiosInstance = axios.create({
       baseURL: `${protocol}://${host}:${port}`,
       timeout: timeout || 10000,
       auth: { username, password },
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      httpsAgent: agent,
     });
     axiosInstance.interceptors.response.use(
       (response) => {
@@ -37,15 +40,15 @@ const createInstance = ({ protocol, host, port, username, password, isBQL = fals
   } else {
     const axiosInstance = axios.create({
       baseURL: `${protocol}://${host}:${port}/obix/`,
-      timeout: timeout || 2000,
+      timeout: timeout || 10000,
       auth: { username, password },
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      httpsAgent: agent,
       transformResponse: [
         function (data) {
           try {
             return convert.xml2js(data, { compact: true, spaces: 4 });
           } catch (error) {
-            return data;
+            throw new XMLParseError(data);
           }
         },
       ],
@@ -65,4 +68,4 @@ const createInstance = ({ protocol, host, port, username, password, isBQL = fals
   }
 };
 
-module.exports = { createInstance };
+module.exports = { createInstance, XMLParseError };

@@ -22,6 +22,9 @@
   },
   "author": "Adam Zimmerman",
   "license": "ISC",
+  "engines": {
+    "node": ">=14"
+  },
   "bugs": {
     "url": "https://github.com/adamzman/obix-js/issues"
   },

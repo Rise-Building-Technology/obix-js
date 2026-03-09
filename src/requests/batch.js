@@ -1,6 +1,12 @@
 const { buildOutputList } = require('../parsers/values');
 const { stripPaths, makeArray, replaceSpecialChars } = require('../helpers');
 
+const xmlElementForValue = (value) => {
+  if (typeof value === 'boolean') return 'bool';
+  if (typeof value === 'number') return 'real';
+  return 'str';
+};
+
 class BatchRequestInstance {
   constructor({ axiosInstance }) {
     this.axiosInstance = axiosInstance;
@@ -13,12 +19,13 @@ class BatchRequestInstance {
     batch = makeArray(batch);
     const { inputErrors, filteredBatch } = this.#filterInvalidBatchInputs(batch);
     filteredBatch.forEach((obj) => {
-      const isRead = obj.action == 'read';
+      const isRead = obj.action === 'read';
       obj.path = stripPaths(obj.path)[0];
       if (!isRead) writeActionPaths.push(obj.path);
+      const escapedPath = replaceSpecialChars(obj.path);
       obj.bodyURI = `
-      <uri is="obix:${isRead ? 'Read' : 'Invoke'}" val="${baseURL}config/${obj.path}/${isRead ? 'out' : 'set'}/" >
-        ${obj.value != undefined ? `<real name="in" val="${replaceSpecialChars(obj.value)}" />` : ''}
+      <uri is="obix:${isRead ? 'Read' : 'Invoke'}" val="${baseURL}config/${escapedPath}/${isRead ? 'out' : 'set'}/" >
+        ${obj.value !== undefined ? `<${xmlElementForValue(obj.value)} name="in" val="${replaceSpecialChars(obj.value)}" />` : ''}
       </uri>`;
     });
 
@@ -30,8 +37,8 @@ class BatchRequestInstance {
     );
 
     const outputList = buildOutputList(data);
-    const writeOutputList = outputList.filter((obj) => obj.action == 'write').map((obj, index) => ({ ...obj, path: writeActionPaths[index] }));
-    const readOutputList = outputList.filter((obj) => obj.action == 'read');
+    const writeOutputList = outputList.filter((obj) => obj.action === 'write').map((obj, index) => ({ ...obj, path: writeActionPaths[index] }));
+    const readOutputList = outputList.filter((obj) => obj.action === 'read');
     const errorOutputList = outputList.filter((obj) => obj.error);
 
     return [...inputErrors, ...errorOutputList, ...writeOutputList, ...readOutputList];
@@ -40,8 +47,8 @@ class BatchRequestInstance {
   #filterInvalidBatchInputs(batch) {
     const inputErrors = [];
     const errorActions = (objTemp, reason) => {
-      delete objTemp.action;
-      inputErrors.push({ ...objTemp, error: true, reason });
+      const { action, ...rest } = objTemp; // eslint-disable-line no-unused-vars
+      inputErrors.push({ ...rest, error: true, reason });
       return false;
     };
     const filteredBatch = batch.filter((obj) => {
@@ -53,9 +60,9 @@ class BatchRequestInstance {
         );
       } else if (!path) {
         return errorActions(obj, 'No path provided');
-      } else if (action != 'write' && action != 'read') {
+      } else if (action !== 'write' && action !== 'read') {
         return errorActions(obj, 'Action needs to be set to "write" or "read"');
-      } else if (action == 'write' && value == undefined) {
+      } else if (action === 'write' && value === undefined) {
         return errorActions(obj, 'Action set to "write", but no value given');
       }
       return true;

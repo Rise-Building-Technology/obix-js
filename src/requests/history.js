@@ -9,40 +9,7 @@ dayjs.extend(advanced);
 dayjs.extend(localizedFormat);
 
 const { stripPaths, makeArray } = require('../helpers');
-
-//#region Errors
-class MissingHistoryQuery extends Error {
-  constructor() {
-    super('Missing history query');
-    this.name = 'MissingHistoryQuery';
-    this.friendlyError = this.message;
-    this.inDepthError = this.message;
-  }
-}
-
-class InvalidHistoryPresetQuery extends Error {
-  constructor(query, presetOptions) {
-    super(`Invalid preset history query: ${query}`);
-    this.name = 'InvalidHistoryPresetQuery';
-    this.friendlyError = this.message;
-    this.inDepthError = `Valid preset queries include:\n${presetOptions.join('\n')}`;
-  }
-}
-
-class InvalidHistoryQueryParameter extends Error {
-  constructor(parameter, paramValue) {
-    super(`Invalid parameter in history query: ${parameter}`);
-    this.name = 'InvalidHistoryQueryParameter';
-    if (parameter == 'limit') {
-      this.friendlyError = this.message;
-      this.inDepthError = `'limit' parameter must be an number but received : ${paramValue}`;
-    } else if (parameter == 'start' || parameter == 'end') {
-      this.friendlyError = this.message;
-      this.inDepthError = `'${parameter}' parameter must be a valid date but received : ${paramValue}`;
-    }
-  }
-}
-//#endregion Errors
+const { MissingHistoryQuery, InvalidHistoryPresetQuery, InvalidHistoryQueryParameter } = require('../errors');
 
 class HistoryRequestInstance {
   constructor({ axiosInstance }) {
@@ -55,7 +22,7 @@ class HistoryRequestInstance {
     let historyData;
 
     // Check if query is a presetQuery or custom timestamps
-    if (typeof query == 'string') {
+    if (typeof query === 'string') {
       const presetOptions = [
         'yesterday',
         'last24Hours',
@@ -64,18 +31,21 @@ class HistoryRequestInstance {
         'last7Days',
         'monthToDate',
         'lastMonth',
-        'yearToDate (limit=1000)',
-        'lastYear (limit=1000)',
+        'yearToDate',
+        'lastYear',
         'unboundedQuery',
       ];
-      if (!presetOptions.some((option) => option == query)) {
+      if (!presetOptions.some((option) => option === query)) {
         throw new InvalidHistoryPresetQuery(query, presetOptions);
       }
 
       // Call to get all preset queries
       const { data: presetQueryData } = await this.axiosInstance.get(`histories/${path}`);
-      query = presetQueryData.obj.ref.find((presetQuery) => presetQuery._attributes.name == query)?._attributes.href;
-      historyData = (await this.axiosInstance.get(`histories/${path}${query}`)).data;
+      const presetHref = presetQueryData.obj.ref.find((presetQuery) => presetQuery._attributes.name === query)?._attributes.href;
+      if (!presetHref) {
+        throw new InvalidHistoryPresetQuery(query, presetOptions);
+      }
+      historyData = (await this.axiosInstance.get(`histories/${path}${presetHref}`)).data;
     } else {
       if (query.start) {
         try {
@@ -103,25 +73,33 @@ class HistoryRequestInstance {
   }
 
   #parseHistoryDataHelper({ data, path }) {
-    const timezone = data.obj.abstime._attributes.tz;
-    const limit = data.int._attributes.val;
-    let start = data.abstime.find((abstime) => abstime._attributes.name == 'start')._attributes.val;
-    let end = data.abstime.find((abstime) => abstime._attributes.name == 'end')._attributes.val;
-    start = dayjs(data.abstime[0]._attributes.val).tz(timezone).format('LLLL z');
-    end = dayjs(data.abstime[1]._attributes.val).tz(timezone).format('LLLL z');
+    const tz = data.obj?.abstime?._attributes?.tz;
+    const limit = data.int?._attributes?.val;
+    const abstimeArray = makeArray(data.abstime);
+    const startVal = abstimeArray.find((a) => a._attributes?.name === 'start')?._attributes?.val;
+    const endVal = abstimeArray.find((a) => a._attributes?.name === 'end')?._attributes?.val;
+    const start = startVal && tz ? dayjs(startVal).tz(tz).format('LLLL z') : startVal;
+    const end = endVal && tz ? dayjs(endVal).tz(tz).format('LLLL z') : endVal;
 
-    const dataObjList = makeArray(data.list.obj);
-    const values = dataObjList.map((dataObj) => ({
-      timestamp: dayjs(dataObj.abstime._attributes.val).tz(timezone).format('LLLL z'),
-      value: String(dataObj.real._attributes.val),
-    }));
+    const dataObjList = makeArray(data.list?.obj);
+    const values = dataObjList.map((dataObj) => {
+      const timestamp = dataObj.abstime?._attributes?.val;
+      const realVal = dataObj.real?._attributes?.val;
+      const boolVal = dataObj.bool?._attributes?.val;
+      const strVal = dataObj.str?._attributes?.val;
+      const value = realVal ?? boolVal ?? strVal ?? '';
+      return {
+        timestamp: timestamp && tz ? dayjs(timestamp).tz(tz).format('LLLL z') : timestamp,
+        value: String(value),
+      };
+    });
 
     return {
       history: path,
       start,
       end,
       limit,
-      timezone,
+      timezone: tz,
       results: values,
     };
   }

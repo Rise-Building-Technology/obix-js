@@ -15,9 +15,10 @@ describe('Axios', () => {
       const axiosInstance = createInstance({ protocol, host, port, username, password });
 
       expect(axiosInstance.defaults.baseURL).toBe(`https://example.com:443/obix/`);
-      expect(axiosInstance.defaults.timeout).toBe(2000);
+      expect(axiosInstance.defaults.timeout).toBe(10000);
       expect(axiosInstance.defaults.auth).toEqual({ username, password });
       expect(axiosInstance.defaults.httpsAgent).toBeInstanceOf(https.Agent);
+      expect(axiosInstance.defaults.httpsAgent.options.rejectUnauthorized).toBe(true);
       expect(axiosInstance.defaults.transformResponse).toContainEqual(expect.any(Function));
     });
 

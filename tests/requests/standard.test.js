@@ -78,16 +78,11 @@ describe('StandardRequestInstance', () => {
       expect(result).toEqual({ action: 'write', path: 'Test/Path', value: false });
     });
     test('should throw error if axios fails', async () => {
-      expect.assertions(1);
-      standardRequestInstance.axiosInstance.post.mockRejectedValue(new Error());
+      standardRequestInstance.axiosInstance.post.mockRejectedValue(new Error('Request failed'));
       const path = 'Test/Path';
       const value = false;
 
-      try {
-        await standardRequestInstance.post({ path, value });
-      } catch (error) {
-        expect(error).toBeTruthy();
-      }
+      await expect(standardRequestInstance.writeRequest({ path, value })).rejects.toThrow('Request failed');
     });
   });
   describe('readRequest', () => {
@@ -137,15 +132,10 @@ describe('StandardRequestInstance', () => {
       expect(result).toEqual({ action: 'read', path: 'Test/Path', value: false });
     });
     test('should throw error if axios fails', async () => {
-      expect.assertions(1);
-      standardRequestInstance.axiosInstance.get.mockRejectedValue(new Error());
+      standardRequestInstance.axiosInstance.get.mockRejectedValue(new Error('Request failed'));
       const path = 'Test/Path';
 
-      try {
-        await standardRequestInstance.post({ path });
-      } catch (error) {
-        expect(error).toBeTruthy();
-      }
+      await expect(standardRequestInstance.readRequest({ path })).rejects.toThrow('Request failed');
     });
   });
 });

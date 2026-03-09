@@ -28,16 +28,11 @@ describe('RawRequestInstance', () => {
       expect(result).toEqual({ action: 'rawPost', data: 'mock result', path: 'Test/Path' });
     });
     test('should throw error if axios fails', async () => {
-      expect.assertions(1);
-      rawRequestInstance.axiosInstance.post.mockRejectedValue(new Error());
+      rawRequestInstance.axiosInstance.post.mockRejectedValue(new Error('Request failed'));
       const path = 'Test/Path';
       const payload = 'Test Payload';
 
-      try {
-        await rawRequestInstance.post({ path, payload });
-      } catch (error) {
-        expect(error).toBeTruthy();
-      }
+      await expect(rawRequestInstance.post({ path, payload })).rejects.toThrow('Request failed');
     });
   });
   describe('get', () => {
@@ -50,15 +45,10 @@ describe('RawRequestInstance', () => {
       expect(result).toEqual({ action: 'rawGet', data: 'mock result', path: 'Test/Path' });
     });
     test('should throw error if axios fails', async () => {
-      expect.assertions(1);
-      rawRequestInstance.axiosInstance.get.mockRejectedValue(new Error());
+      rawRequestInstance.axiosInstance.get.mockRejectedValue(new Error('Request failed'));
       const path = 'Test/Path';
 
-      try {
-        await rawRequestInstance.get({ path });
-      } catch (error) {
-        expect(error).toBeTruthy();
-      }
+      await expect(rawRequestInstance.get({ path })).rejects.toThrow('Request failed');
     });
   });
 });

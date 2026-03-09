@@ -4,7 +4,7 @@ const { parseError } = require('./errors');
 
 const parseValueType = ({ enum: enu, bool, str, real }) => {
   let value, action, path;
-  const getAction = (attributes) => (attributes.displayName == 'Out' ? 'read' : 'write');
+  const getAction = (attributes) => (attributes.displayName === 'Out' ? 'read' : 'write');
 
   // enum is a reserved keyword in js; must cast it to different variable name
   if (enu) {
@@ -13,7 +13,7 @@ const parseValueType = ({ enum: enu, bool, str, real }) => {
     action = getAction(enu._attributes);
   } else if (bool) {
     path = getPath(bool._attributes);
-    value = bool._attributes.val == 'true';
+    value = bool._attributes.val === 'true';
     action = getAction(bool._attributes);
   } else if (str) {
     path = getPath(str._attributes);
@@ -31,6 +31,7 @@ const parseValueType = ({ enum: enu, bool, str, real }) => {
 
 const buildOutputList = (data) => {
   data = data.obj || data;
+  if (!data.list) return [];
   return [...buildErrorList(data), ...buildValuesList(data)];
 };
 

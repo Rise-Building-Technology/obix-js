@@ -23,7 +23,7 @@ describe('BQLQueryInstance', () => {
 
       const result = await bqlQueryInstance.bqlQuery({ query });
 
-      expect(axiosGet).toHaveBeenCalledWith('ord?station:|history:/Test|bql:select%20*|view:file:ITableToHtml');
+      expect(axiosGet).toHaveBeenCalledWith('ord?station%3A%7Chistory%3A%2FTest%7Cbql%3Aselect%2520*|view:file:ITableToHtml');
       expect(result).toEqual([
         {
           Slot_Path: 'slot:/Test/Ramp',
@@ -76,15 +76,10 @@ describe('BQLQueryInstance', () => {
       }
     });
     test('should throw error if axios fails', async () => {
-      expect.assertions(1);
-      bqlQueryInstance.axiosInstance.get.mockRejectedValue(new Error());
+      bqlQueryInstance.axiosInstance.get.mockRejectedValue(new Error('Request failed'));
       const query = 'station:|history:/Test|bql:select%20*';
 
-      try {
-        await bqlQueryInstance.bqlQuery({ query });
-      } catch (error) {
-        expect(error).toBeTruthy();
-      }
+      await expect(bqlQueryInstance.bqlQuery({ query })).rejects.toThrow('Request failed');
     });
   });
 });
