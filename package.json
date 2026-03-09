@@ -1,5 +1,5 @@
 {
-  "name": "obix-js",
+  "name": "@risebt/obix-js",
   "version": "1.2.8",
   "description": "Core Obix Niagara functions",
   "main": "index.js",
@@ -18,14 +18,17 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/adamzman/obix-js.git"
+    "url": "git+https://github.com/Rise-Building-Technology/obix-js.git"
   },
   "author": "Adam Zimmerman",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/adamzman/obix-js/issues"
+  "engines": {
+    "node": ">=20"
   },
-  "homepage": "https://github.com/adamzman/obix-js#readme",
+  "bugs": {
+    "url": "https://github.com/Rise-Building-Technology/obix-js/issues"
+  },
+  "homepage": "https://github.com/Rise-Building-Technology/obix-js#readme",
   "dependencies": {
     "axios": "^1.6.2",
     "cheerio": "^1.0.0-rc.12",

@@ -1,5 +1,5 @@
 const { parseValueType } = require('../parsers/values');
-const { stripPaths, replaceSpecialChars } = require('../helpers');
+const { stripPaths, replaceSpecialChars, xmlElementForValue } = require('../helpers');
 
 class StandardRequestInstance {
   constructor({ axiosInstance }) {
@@ -8,7 +8,8 @@ class StandardRequestInstance {
 
   async writeRequest({ path, value }) {
     path = stripPaths(path)[0];
-    const { data } = await this.axiosInstance.post(`config/${path}/set/`, `<real val="${replaceSpecialChars(value)}"/>`);
+    const tag = xmlElementForValue(value);
+    const { data } = await this.axiosInstance.post(`config/${path}/set/`, `<${tag} val="${replaceSpecialChars(value)}"/>`);
     return { ...parseValueType(data), path, action: 'write' };
   }
 

@@ -104,18 +104,13 @@ describe('BatchRequestInstance', () => {
       ]);
     });
     test('should throw error if axios fails', async () => {
-      expect.assertions(1);
-      batchRequestInstance.axiosInstance.post.mockRejectedValue(new Error());
+      batchRequestInstance.axiosInstance.post.mockRejectedValue(new Error('Request failed'));
       const batch = [
         { path: 'Test/BooleanWritable2', action: 'read' },
         { path: 'Test/NumericWritable', action: 'write', value: 50 },
       ];
 
-      try {
-        await batchRequestInstance.batchRequest({ batch });
-      } catch (error) {
-        expect(error).toBeTruthy();
-      }
+      await expect(batchRequestInstance.batchRequest({ batch })).rejects.toThrow('Request failed');
     });
   });
 });

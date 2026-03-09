@@ -28,29 +28,22 @@ class WatcherRequestInstance {
     };
   }
 
-  async #watcherAdd(endpoint, { paths }) {
+  #buildPathListBody(paths) {
     paths = stripPaths(paths);
-    const { data } = await this.axiosInstance.post(
-      endpoint,
-      `<obj>
+    return `<obj>
           <list>
             ${paths.map((p) => `<uri val="/obix/config/${replaceSpecialChars(p)}/" />`).join('\n')}
           </list>
-        </obj>`
-    );
+        </obj>`;
+  }
+
+  async #watcherAdd(endpoint, { paths }) {
+    const { data } = await this.axiosInstance.post(endpoint, this.#buildPathListBody(paths));
     return this.#buildOutputList(data);
   }
 
   async #watcherRemovePath(endpoint, { paths }) {
-    paths = stripPaths(paths);
-    await this.axiosInstance.post(
-      endpoint,
-      `<obj>
-          <list>
-            ${paths.map((p) => `<uri val="/obix/config/${replaceSpecialChars(p)}/" />`).join('\n')}
-          </list>
-        </obj>`
-    );
+    await this.axiosInstance.post(endpoint, this.#buildPathListBody(paths));
     return;
   }
 
@@ -59,14 +52,17 @@ class WatcherRequestInstance {
     return;
   }
 
-  async #watcherPollChanges(endpoint) {
+  async #watcherPoll(endpoint) {
     const { data } = await this.axiosInstance.post(endpoint);
     return this.#buildOutputList(data);
   }
 
+  async #watcherPollChanges(endpoint) {
+    return this.#watcherPoll(endpoint);
+  }
+
   async #watcherPollRefresh(endpoint) {
-    const { data } = await this.axiosInstance.post(endpoint);
-    return this.#buildOutputList(data);
+    return this.#watcherPoll(endpoint);
   }
 
   async #watcherUpdateLease(endpoint, { leaseTime }) {
@@ -75,13 +71,13 @@ class WatcherRequestInstance {
   }
 
   #findAttributeByName(dataArray, name) {
-    return dataArray.find((d) => d._attributes.name == name)?._attributes;
+    return dataArray.find((d) => d._attributes.name === name)?._attributes;
   }
 
   #buildLeaseBody(leaseTime) {
     if (Number.isInteger(Number(leaseTime))) {
       return `<real val="${Number(leaseTime)}" />`;
-    } else if (typeof leaseTime == 'string') {
+    } else if (typeof leaseTime === 'string') {
       return `<reltime val="${leaseTime}" />`;
     } else {
       throw new UnknownTypeError();

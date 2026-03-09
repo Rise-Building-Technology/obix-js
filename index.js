@@ -10,9 +10,19 @@ const { WatcherRequestInstance } = require('./src/requests/watcher');
 // BQL Imports
 const { BQLQueryInstance } = require('./src/requests/bql');
 
+const validateConfig = ({ host, port, username, password }) => {
+  if (typeof username !== 'string' || username.length === 0) throw new Error('username must be a non-empty string');
+  if (typeof password !== 'string' || password.length === 0) throw new Error('password must be a non-empty string');
+  if (typeof host !== 'string' || host.length === 0) throw new Error('host must be a non-empty string');
+  if (host.includes('@') || host.includes('/')) throw new Error('host contains invalid characters');
+  const portNum = Number(port);
+  if (!Number.isInteger(portNum) || portNum < 1 || portNum > 65535) throw new Error('port must be an integer between 1 and 65535');
+};
+
 class ObixInstance {
-  constructor({ protocol = 'https', host = 'localhost', port = '443', username, password, timeout }) {
-    const axiosInstance = createInstance({ protocol, host, port, username, password, timeout });
+  constructor({ protocol = 'https', host = 'localhost', port = '443', username, password, timeout, rejectUnauthorized, httpsAgent }) {
+    validateConfig({ host, port, username, password });
+    const axiosInstance = createInstance({ protocol, host, port, username, password, timeout, rejectUnauthorized, httpsAgent });
     this.rawRequestInstance = new RawRequestInstance({ axiosInstance });
     this.historyRequestInstance = new HistoryRequestInstance({ axiosInstance });
     this.batchRequestInstance = new BatchRequestInstance({ axiosInstance });
@@ -23,44 +33,45 @@ class ObixInstance {
   /**
    * @param {string} payload - Should be an xml string and replace any special characters like the following: https://stackoverflow.com/questions/1091945/what-characters-do-i-need-to-escape-in-xml-documents#:~:text=XML%20escape%20characters,the%20W3C%20Markup%20Validation%20Service
    */
-  async post({ path, payload }) {
-    return await this.rawRequestInstance.post({ path, payload });
+  post({ path, payload }) {
+    return this.rawRequestInstance.post({ path, payload });
   }
-  async get({ path }) {
-    return await this.rawRequestInstance.get({ path });
-  }
-
-  async history({ path, query }) {
-    return await this.historyRequestInstance.historyRequest({ path, query });
+  get({ path }) {
+    return this.rawRequestInstance.get({ path });
   }
 
-  async batch({ batch }) {
-    return await this.batchRequestInstance.batchRequest({ batch });
+  history({ path, query }) {
+    return this.historyRequestInstance.historyRequest({ path, query });
   }
 
-  async read({ path }) {
-    return await this.standardRequestInstance.readRequest({ path });
-  }
-  async write({ path, value }) {
-    return await this.standardRequestInstance.writeRequest({ path, value });
+  batch({ batch }) {
+    return this.batchRequestInstance.batchRequest({ batch });
   }
 
-  async watcherCreate() {
-    return await this.watcherRequestInstance.watcherCreate();
+  read({ path }) {
+    return this.standardRequestInstance.readRequest({ path });
   }
-  async watcherUpdateDefaultLease({ leaseTime }) {
-    return await this.watcherRequestInstance.watcherUpdateDefaultLease({ leaseTime });
+  write({ path, value }) {
+    return this.standardRequestInstance.writeRequest({ path, value });
+  }
+
+  watcherCreate() {
+    return this.watcherRequestInstance.watcherCreate();
+  }
+  watcherUpdateDefaultLease({ leaseTime }) {
+    return this.watcherRequestInstance.watcherUpdateDefaultLease({ leaseTime });
   }
 }
 
 class BQLInstance {
-  constructor({ protocol = 'https', host = 'localhost', port = '443', username, password, timeout }) {
-    const axiosInstance = createInstance({ protocol, host, port, username, password, isBQL: true, timeout });
+  constructor({ protocol = 'https', host = 'localhost', port = '443', username, password, timeout, rejectUnauthorized, httpsAgent }) {
+    validateConfig({ host, port, username, password });
+    const axiosInstance = createInstance({ protocol, host, port, username, password, isBQL: true, timeout, rejectUnauthorized, httpsAgent });
     this.bqlQueryInstance = new BQLQueryInstance({ axiosInstance });
   }
 
-  async query({ query }) {
-    return await this.bqlQueryInstance.bqlQuery({ query });
+  query({ query }) {
+    return this.bqlQueryInstance.bqlQuery({ query });
   }
 }
 

@@ -164,7 +164,7 @@ describe('HistoryRequestInstance', () => {
           expect(error.message).toBe('Invalid parameter in history query: limit');
           expect(error.name).toBe('InvalidHistoryQueryParameter');
           expect(error.friendlyError).toBe('Invalid parameter in history query: limit');
-          expect(error.inDepthError).toBe("'limit' parameter must be an number but received : invalid");
+          expect(error.inDepthError).toBe("'limit' parameter must be a number but received : invalid");
         }
       });
     });
@@ -181,14 +181,11 @@ describe('HistoryRequestInstance', () => {
       }
     });
     test('should throw error if axios fails', async () => {
-      expect.assertions(1);
-      historyRequestInstance.axiosInstance.get.mockRejectedValue(new Error());
+      historyRequestInstance.axiosInstance.get.mockRejectedValue(new Error('Request failed'));
 
-      try {
-        await historyRequestInstance.historyRequest({ path: 'History/Test/BooleanWritable', query: 'yesterday' });
-      } catch (error) {
-        expect(error).toBeTruthy();
-      }
+      await expect(historyRequestInstance.historyRequest({ path: 'History/Test/BooleanWritable', query: 'yesterday' })).rejects.toThrow(
+        'Request failed'
+      );
     });
   });
 });

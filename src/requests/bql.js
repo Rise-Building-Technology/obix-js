@@ -1,15 +1,5 @@
 const cheerio = require('cheerio');
-
-//#region Errors
-class MissingBQLQuery extends Error {
-  constructor() {
-    super('Missing BQL query');
-    this.name = 'MissingBQLQuery';
-    this.friendlyError = this.message;
-    this.inDepthError = 'Query parameter missing from request';
-  }
-}
-//#endregion Errors
+const { MissingBQLQuery } = require('../errors');
 
 class BQLQueryInstance {
   constructor({ axiosInstance }) {
@@ -19,25 +9,24 @@ class BQLQueryInstance {
   async bqlQuery({ query } = {}) {
     if (!query) throw new MissingBQLQuery();
 
-    const { data } = await this.axiosInstance.get(`ord?${query}|view:file:ITableToHtml`);
+    const { data } = await this.axiosInstance.get(`ord?${encodeURIComponent(query)}|view:file:ITableToHtml`);
 
     const $ = cheerio.load(data);
     const $table = $('table');
 
     if ($table.length === 0) {
-      return []; // Handle the case where the table is not found
+      return [];
     }
 
     const $rows = $table.find('tr');
     if ($rows.length < 2) {
-      return []; // Handle the case where there are no data rows
+      return [];
     }
 
     const $headers = $rows.eq(0).find('th');
     const parsedDataArray = [];
 
     function convertType(value) {
-      // Check for specific values and convert them
       if (value === 'null') {
         return null;
       } else if (value === '') {
@@ -45,9 +34,9 @@ class BQLQueryInstance {
       } else if (value === 'true' || value === 'false') {
         return value === 'true';
       } else if (!isNaN(value)) {
-        return parseFloat(value); // Convert to number
+        return parseFloat(value);
       } else {
-        return value; // Keep as is
+        return value;
       }
     }
 
@@ -55,13 +44,13 @@ class BQLQueryInstance {
       const $cells = $(this).find('td');
 
       if ($cells.length !== $headers.length) {
-        return; // Skip rows with mismatched cell count
+        return;
       }
 
       const rowData = {};
 
       $headers.slice(0, -1).each(function (j) {
-        const headerText = $(this).text().trim().replace(' ', '_');
+        const headerText = $(this).text().trim().replaceAll(' ', '_');
         const cellText = convertType($cells.eq(j).text().trim());
         rowData[headerText] = cellText;
       });

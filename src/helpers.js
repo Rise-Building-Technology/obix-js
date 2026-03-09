@@ -1,15 +1,15 @@
-const { PathError } = require('./errors');
+const { PathError, PathTraversalError } = require('./errors');
 
 const stripPaths = (paths) => {
   paths = makeArray(paths);
-  // Removes null and undefined values from array
   paths = paths.filter((p) => p);
-  if (paths.length == 0) {
+  if (paths.length === 0) {
     throw new PathError('Missing Path');
   }
   paths = paths.map((p) => {
-    p.charAt(p.length - 1) == '/' ? (p = p.slice(0, -1)) : null;
-    p.charAt(0) == '/' ? (p = p.slice(1)) : null;
+    if (p.charAt(p.length - 1) === '/') p = p.slice(0, -1);
+    if (p.charAt(0) === '/') p = p.slice(1);
+    if (p.includes('..')) throw new PathTraversalError(p);
     return p;
   });
   return paths;
@@ -33,12 +33,17 @@ const replaceSpecialChars = (value) => {
     { symbol: '<', escape: '&lt;' },
     { symbol: '>', escape: '&gt;' },
   ];
-  if (typeof value == 'string') {
-    specialChars.forEach((sc) => {
-      value = value.replaceAll(sc.symbol, sc.escape);
-    });
-  }
+  value = String(value);
+  specialChars.forEach((sc) => {
+    value = value.replaceAll(sc.symbol, sc.escape);
+  });
   return value;
 };
 
-module.exports = { stripPaths, makeArray, replaceSpecialChars };
+const xmlElementForValue = (value) => {
+  if (typeof value === 'boolean') return 'bool';
+  if (typeof value === 'number') return 'real';
+  return 'str';
+};
+
+module.exports = { stripPaths, makeArray, replaceSpecialChars, xmlElementForValue };

@@ -1,5 +1,5 @@
-const { PathError } = require('../src/errors');
-const { stripPaths, makeArray, replaceSpecialChars } = require('../src/helpers');
+const { PathError, PathTraversalError } = require('../src/errors');
+const { stripPaths, makeArray, replaceSpecialChars, xmlElementForValue } = require('../src/helpers');
 
 describe('Helpers', () => {
   describe('stripPaths', () => {
@@ -12,6 +12,10 @@ describe('Helpers', () => {
       const paths = ['/Testing/Path/', 'Testing/Path2/'];
       const results = stripPaths(paths);
       expect(results).toEqual(['Testing/Path', 'Testing/Path2']);
+    });
+    test('throws PathTraversalError for paths containing ..', () => {
+      expect(() => stripPaths('../../watchService/make')).toThrow(PathTraversalError);
+      expect(() => stripPaths('test/../admin')).toThrow(PathTraversalError);
     });
     test('throws error if there is no path / paths', () => {
       expect.assertions(2);
@@ -58,10 +62,25 @@ describe('Helpers', () => {
       const result = replaceSpecialChars(input);
       expect(result).toEqual(input);
     });
-    test('should handle non-string input', () => {
-      const input = 42; // Example non-string input
+    test('should coerce non-string input to string', () => {
+      const input = 42;
       const result = replaceSpecialChars(input);
-      expect(result).toEqual(input);
+      expect(result).toEqual('42');
+    });
+  });
+
+  describe('xmlElementForValue', () => {
+    test('should return bool for boolean values', () => {
+      expect(xmlElementForValue(true)).toBe('bool');
+      expect(xmlElementForValue(false)).toBe('bool');
+    });
+    test('should return real for number values', () => {
+      expect(xmlElementForValue(42)).toBe('real');
+      expect(xmlElementForValue(3.14)).toBe('real');
+    });
+    test('should return str for string and other values', () => {
+      expect(xmlElementForValue('hello')).toBe('str');
+      expect(xmlElementForValue('')).toBe('str');
     });
   });
 });

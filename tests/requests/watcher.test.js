@@ -35,13 +35,8 @@ describe('WatcherRequestInstance', () => {
       expect(axiosPut).toHaveBeenCalledWith('/watchService/defaultLeaseTime/', '<reltime val="PT4M30S" />');
     });
     test('should throw error if axios fails', async () => {
-      expect.assertions(1);
-      watcherRequestInstance.axiosInstance.put.mockRejectedValueOnce(new Error());
-      try {
-        await watcherRequestInstance.watcherUpdateDefaultLease({ leaseTime: 10 });
-      } catch (error) {
-        expect(error).toBeTruthy();
-      }
+      watcherRequestInstance.axiosInstance.put.mockRejectedValueOnce(new Error('Request failed'));
+      await expect(watcherRequestInstance.watcherUpdateDefaultLease({ leaseTime: 10 })).rejects.toThrow('Request failed');
     });
   });
 
