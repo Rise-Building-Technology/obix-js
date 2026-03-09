@@ -40,4 +40,10 @@ const replaceSpecialChars = (value) => {
   return value;
 };
 
-module.exports = { stripPaths, makeArray, replaceSpecialChars };
+const xmlElementForValue = (value) => {
+  if (typeof value === 'boolean') return 'bool';
+  if (typeof value === 'number') return 'real';
+  return 'str';
+};
+
+module.exports = { stripPaths, makeArray, replaceSpecialChars, xmlElementForValue };

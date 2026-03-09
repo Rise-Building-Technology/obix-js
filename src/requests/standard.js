@@ -1,11 +1,5 @@
 const { parseValueType } = require('../parsers/values');
-const { stripPaths, replaceSpecialChars } = require('../helpers');
-
-const xmlElementForValue = (value) => {
-  if (typeof value === 'boolean') return 'bool';
-  if (typeof value === 'number') return 'real';
-  return 'str';
-};
+const { stripPaths, replaceSpecialChars, xmlElementForValue } = require('../helpers');
 
 class StandardRequestInstance {
   constructor({ axiosInstance }) {

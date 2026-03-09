@@ -140,6 +140,16 @@ class InvalidHistoryQueryParameter extends Error {
   }
 }
 
+class XMLParseError extends Error {
+  constructor(rawData) {
+    super('Failed to parse XML response');
+    this.name = 'XMLParseError';
+    this.friendlyError = this.message;
+    this.inDepthError = 'The server returned a response that could not be parsed as XML';
+    this.rawData = rawData;
+  }
+}
+
 class MissingBQLQuery extends Error {
   constructor() {
     super('Missing BQL query');
@@ -160,5 +170,6 @@ module.exports = {
   MissingHistoryQuery,
   InvalidHistoryPresetQuery,
   InvalidHistoryQueryParameter,
+  XMLParseError,
   MissingBQLQuery,
 };

@@ -1,5 +1,5 @@
 const { PathError, PathTraversalError } = require('../src/errors');
-const { stripPaths, makeArray, replaceSpecialChars } = require('../src/helpers');
+const { stripPaths, makeArray, replaceSpecialChars, xmlElementForValue } = require('../src/helpers');
 
 describe('Helpers', () => {
   describe('stripPaths', () => {
@@ -66,6 +66,21 @@ describe('Helpers', () => {
       const input = 42;
       const result = replaceSpecialChars(input);
       expect(result).toEqual('42');
+    });
+  });
+
+  describe('xmlElementForValue', () => {
+    test('should return bool for boolean values', () => {
+      expect(xmlElementForValue(true)).toBe('bool');
+      expect(xmlElementForValue(false)).toBe('bool');
+    });
+    test('should return real for number values', () => {
+      expect(xmlElementForValue(42)).toBe('real');
+      expect(xmlElementForValue(3.14)).toBe('real');
+    });
+    test('should return str for string and other values', () => {
+      expect(xmlElementForValue('hello')).toBe('str');
+      expect(xmlElementForValue('')).toBe('str');
     });
   });
 });

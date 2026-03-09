@@ -41,7 +41,7 @@ class HistoryRequestInstance {
 
       // Call to get all preset queries
       const { data: presetQueryData } = await this.axiosInstance.get(`histories/${path}`);
-      const presetHref = presetQueryData.obj.ref.find((presetQuery) => presetQuery._attributes.name === query)?._attributes.href;
+      const presetHref = presetQueryData.obj.ref.find((presetQuery) => presetQuery._attributes.name.startsWith(query))?._attributes.href;
       if (!presetHref) {
         throw new InvalidHistoryPresetQuery(query, presetOptions);
       }

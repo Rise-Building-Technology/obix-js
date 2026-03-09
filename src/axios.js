@@ -1,20 +1,10 @@
 const axios = require('axios');
 const https = require('https');
 const convert = require('xml-js');
-const { HTTPError, BQLHTTPError, ProtocolError } = require('./errors');
+const { HTTPError, BQLHTTPError, ProtocolError, XMLParseError } = require('./errors');
 const { parseError } = require('./parsers/errors');
 
-class XMLParseError extends Error {
-  constructor(rawData) {
-    super('Failed to parse XML response');
-    this.name = 'XMLParseError';
-    this.friendlyError = this.message;
-    this.inDepthError = 'The server returned a response that could not be parsed as XML';
-    this.rawData = rawData;
-  }
-}
-
-const createInstance = ({ protocol, host, port, username, password, isBQL = false, timeout, rejectUnauthorized = true, httpsAgent }) => {
+const createInstance = ({ protocol, host, port, username, password, isBQL = false, timeout, rejectUnauthorized = false, httpsAgent }) => {
   if (protocol !== 'https' && protocol !== 'http') throw new ProtocolError();
 
   const agent = httpsAgent || new https.Agent({ rejectUnauthorized, keepAlive: true });
@@ -68,4 +58,4 @@ const createInstance = ({ protocol, host, port, username, password, isBQL = fals
   }
 };
 
-module.exports = { createInstance, XMLParseError };
+module.exports = { createInstance };

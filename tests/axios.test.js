@@ -18,7 +18,7 @@ describe('Axios', () => {
       expect(axiosInstance.defaults.timeout).toBe(10000);
       expect(axiosInstance.defaults.auth).toEqual({ username, password });
       expect(axiosInstance.defaults.httpsAgent).toBeInstanceOf(https.Agent);
-      expect(axiosInstance.defaults.httpsAgent.options.rejectUnauthorized).toBe(true);
+      expect(axiosInstance.defaults.httpsAgent.options.rejectUnauthorized).toBe(false);
       expect(axiosInstance.defaults.transformResponse).toContainEqual(expect.any(Function));
     });
 

@@ -1,11 +1,5 @@
 const { buildOutputList } = require('../parsers/values');
-const { stripPaths, makeArray, replaceSpecialChars } = require('../helpers');
-
-const xmlElementForValue = (value) => {
-  if (typeof value === 'boolean') return 'bool';
-  if (typeof value === 'number') return 'real';
-  return 'str';
-};
+const { stripPaths, makeArray, replaceSpecialChars, xmlElementForValue } = require('../helpers');
 
 class BatchRequestInstance {
   constructor({ axiosInstance }) {
@@ -25,7 +19,7 @@ class BatchRequestInstance {
       const escapedPath = replaceSpecialChars(obj.path);
       obj.bodyURI = `
       <uri is="obix:${isRead ? 'Read' : 'Invoke'}" val="${baseURL}config/${escapedPath}/${isRead ? 'out' : 'set'}/" >
-        ${obj.value !== undefined ? `<${xmlElementForValue(obj.value)} name="in" val="${replaceSpecialChars(obj.value)}" />` : ''}
+        ${obj.value != null ? `<${xmlElementForValue(obj.value)} name="in" val="${replaceSpecialChars(obj.value)}" />` : ''}
       </uri>`;
     });
 
@@ -62,7 +56,7 @@ class BatchRequestInstance {
         return errorActions(obj, 'No path provided');
       } else if (action !== 'write' && action !== 'read') {
         return errorActions(obj, 'Action needs to be set to "write" or "read"');
-      } else if (action === 'write' && value === undefined) {
+      } else if (action === 'write' && value == null) { // eslint-disable-line eqeqeq
         return errorActions(obj, 'Action set to "write", but no value given');
       }
       return true;
